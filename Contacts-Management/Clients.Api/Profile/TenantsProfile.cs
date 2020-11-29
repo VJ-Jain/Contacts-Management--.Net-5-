@@ -1,5 +1,6 @@
 ﻿using Clients.Api.Dtos;
 using Clients.Api.Models;
+using System;
 
 namespace Clients.Api.Profile
 {
@@ -7,7 +8,8 @@ namespace Clients.Api.Profile
     {
         public TenantsProfile()
         {
-            CreateMap<Tenant, TenantReadDto>();
+            CreateMap<Tenant, TenantReadDto>()
+                .ForMember(d => d.DateCreated, s => s.MapFrom(o => o.DateCreated.ToShortDateString()));
         }
     }
 }

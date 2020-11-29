@@ -12,19 +12,19 @@ namespace Clients.Api.Models
         public Guid ClientId { get; set; } = Guid.NewGuid();
 
         [Required]
-        public string FirstName { get; set; }
+        public String FirstName { get; set; }
 
         [Required]
-        public string LastName { get; set; }
+        public String LastName { get; set; }
 
         [Required]
-        public string ContactNumber { get; set; }
+        public String ContactNumber { get; set; }
 
         [Required]
-        public string EmailAddress { get; set; }
+        public String EmailAddress { get; set; }
 
         [Required]
-        public string Country { get; set; }
+        public String Country { get; set; }
 
         [Required]
         public ClientType ClientType { get; set; }
