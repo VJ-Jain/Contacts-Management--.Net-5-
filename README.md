@@ -17,4 +17,5 @@ This project uses
 
 Update database name and connection string in `appsettings.json` & then run `dotnet ef database update`.
 
-Api endpoints - <kbd>![Endpoints](./Endpoints.jpg)</kbd>
+Api endpoints - <kbd>![Endpoints](./Endpoints.JPG)</kbd>
+
