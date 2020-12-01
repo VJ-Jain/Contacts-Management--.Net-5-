@@ -14,6 +14,10 @@ This project uses
 * Entity Framework
 * Automapper
 * Swagger
+* Entity Framework InMemory (For tests)
+* FluentAssertions  (For tests)
+* xUnit  (For tests)
+* WebApplicationFactory (For tests)
 
 Update database name and connection string in `appsettings.json` & then run `dotnet ef database update`.
 
