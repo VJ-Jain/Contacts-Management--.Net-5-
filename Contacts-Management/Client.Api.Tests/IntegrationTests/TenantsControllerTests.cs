@@ -15,6 +15,17 @@ namespace Client.Api.Tests.IntegrationTests
 {
     public class TenantsControllerTests
     {
+        public static async Task<TenantReadDto> CreateTenant(HttpClient httpClient)
+        {
+            var createResponse = await httpClient.PostAsync("/api/tenants", new StringContent(""));
+            var createResponseBody = await createResponse.Content.ReadAsStringAsync();
+            var createdTenant = JsonConvert.DeserializeObject<TenantReadDto>(createResponseBody);
+            createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+            createdTenant.Should().NotBeNull();
+
+            return createdTenant;
+        }        
+        
         [Fact]
         public async Task Should_Get_Zero_Tenants_When_Not_Created()
         {
@@ -37,13 +48,8 @@ namespace Client.Api.Tests.IntegrationTests
             // Arrange
             var customHttpClient = new CustomWebApplicationFactory<Startup>(Guid.NewGuid().ToString()).CreateClient();
 
-            var createResponse1 = await customHttpClient.PostAsync("/api/tenants", new StringContent(""));
-            var createResponseBody1 = await createResponse1.Content.ReadAsStringAsync();
-            var createdTenant1 = JsonConvert.DeserializeObject<TenantReadDto>(createResponseBody1);
-
-            var createResponse2 = await customHttpClient.PostAsync("/api/tenants", new StringContent(""));
-            var createResponseBody2 = await createResponse2.Content.ReadAsStringAsync();
-            var createdTenant2 = JsonConvert.DeserializeObject<TenantReadDto>(createResponseBody2);
+            var createdTenant1 = await CreateTenant(customHttpClient);
+            var createdTenant2 = await CreateTenant(customHttpClient);
 
             // Act
             var getResponse = await customHttpClient.GetAsync("/api/tenants");
@@ -63,14 +69,8 @@ namespace Client.Api.Tests.IntegrationTests
             // Arrange
             var customHttpClient = new CustomWebApplicationFactory<Startup>(Guid.NewGuid().ToString()).CreateClient();
 
-            // Act
-            var createResponse = await customHttpClient.PostAsync("/api/tenants", new StringContent(""));
-
-            //Assert
-            var createResponseBody = await createResponse.Content.ReadAsStringAsync();
-            var createdTenant = JsonConvert.DeserializeObject<TenantReadDto>(createResponseBody);
-            createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
-            createdTenant.Should().NotBeNull();
+            // Act, Assert
+            await CreateTenant(customHttpClient);
         }
 
         [Fact]
@@ -79,21 +79,18 @@ namespace Client.Api.Tests.IntegrationTests
             // Arrange
             var customHttpClient = new CustomWebApplicationFactory<Startup>(Guid.NewGuid().ToString()).CreateClient();
 
-            var createResponse = await customHttpClient.PostAsync("/api/tenants", new StringContent(""));
-            var createResponseBody = await createResponse.Content.ReadAsStringAsync();
-            var createdTenant = JsonConvert.DeserializeObject<TenantReadDto>(createResponseBody);
-
-            await customHttpClient.PostAsync("/api/tenants", new StringContent(""));
+            var createdTenant1 = await CreateTenant(customHttpClient);
+            var createdTenant2 = await CreateTenant(customHttpClient);
 
             // Act
-            var getResponse = await customHttpClient.GetAsync($"/api/tenants/{createdTenant.TenantId}");
+            var getResponse = await customHttpClient.GetAsync($"/api/tenants/{createdTenant1.TenantId}");
 
             //Assert
             getResponse.StatusCode.Should().Be(HttpStatusCode.OK);
             var responseBody = await getResponse.Content.ReadAsStringAsync();
             var retrievedTenant = JsonConvert.DeserializeObject<TenantReadDto>(responseBody);
             retrievedTenant.Should().NotBeNull();
-            retrievedTenant.TenantId.Should().Be(createdTenant.TenantId);
+            retrievedTenant.TenantId.Should().Be(createdTenant1.TenantId);
         }
 
         [Fact]
@@ -102,26 +99,23 @@ namespace Client.Api.Tests.IntegrationTests
             // Arrange
             var customHttpClient = new CustomWebApplicationFactory<Startup>(Guid.NewGuid().ToString()).CreateClient();
 
-            var createResponse = await customHttpClient.PostAsync("/api/tenants", new StringContent(""));
-            var createResponseBody = await createResponse.Content.ReadAsStringAsync();
-            var createdTenant = JsonConvert.DeserializeObject<TenantReadDto>(createResponseBody);
-
-            await customHttpClient.PostAsync("/api/tenants", new StringContent(""));
+            var createdTenant1 = await CreateTenant(customHttpClient);
+            var createdTenant2 = await CreateTenant(customHttpClient);
 
             // Act
-            var getResponseBeforeDeletion = await customHttpClient.GetAsync($"/api/tenants/{createdTenant.TenantId}");
+            var getResponseBeforeDeletion = await customHttpClient.GetAsync($"/api/tenants/{createdTenant1.TenantId}");
 
             //Assert
             getResponseBeforeDeletion.StatusCode.Should().Be(HttpStatusCode.OK);
 
             // Act
-            var deleteResponse = await customHttpClient.DeleteAsync($"/api/tenants/{createdTenant.TenantId}");
+            var deleteResponse = await customHttpClient.DeleteAsync($"/api/tenants/{createdTenant1.TenantId}");
 
             //Assert
             deleteResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
             // Act
-            var getResponseAfterDeletion = await customHttpClient.GetAsync($"/api/tenants/{createdTenant.TenantId}");
+            var getResponseAfterDeletion = await customHttpClient.GetAsync($"/api/tenants/{createdTenant1.TenantId}");
 
             //Assert
             getResponseAfterDeletion.StatusCode.Should().Be(HttpStatusCode.NotFound);
@@ -133,25 +127,8 @@ namespace Client.Api.Tests.IntegrationTests
             // Arrange
             var customHttpClient = new CustomWebApplicationFactory<Startup>(Guid.NewGuid().ToString()).CreateClient();
 
-            var createTenantResponse = await customHttpClient.PostAsync("/api/tenants", new StringContent(""));
-            var createTenantResponseBody = await createTenantResponse.Content.ReadAsStringAsync();
-            var createdTenant = JsonConvert.DeserializeObject<TenantReadDto>(createTenantResponseBody);
-
-            var client = new ClientCreateDto
-            {
-                TenantId = createdTenant.TenantId,
-                FirstName = "any",
-                LastName = "any",
-                ContactNumber = "any",
-                EmailAddress = "any",
-                Country = "any",
-                ClientType = ClientType.Free.ToString()
-            };
-            var payload = JsonConvert.SerializeObject(client);
-
-            var createClientResponse = await customHttpClient.PostAsync("/api/clients", new StringContent(payload, Encoding.UTF8, "application/json"));
-            var createClientResponseBody = await createClientResponse.Content.ReadAsStringAsync();
-            var createdClient = JsonConvert.DeserializeObject<ClientReadDto>(createClientResponseBody);
+            var createdTenant = await CreateTenant(customHttpClient);
+            var createdClient = await ClientsControllerTests.CreateClient(customHttpClient, createdTenant.TenantId);
 
             // Act
             var getAllClientsForTenantResponse = await customHttpClient.GetAsync($"/api/tenants/{createdTenant.TenantId}/clients");
