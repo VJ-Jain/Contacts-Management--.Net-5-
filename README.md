@@ -7,7 +7,7 @@
 * A simple Web API project to create, update & delete tenants and clients.
 * Clients must belong to a tenant, so create a tenant first & then create a client.
 * Once created, client can also be moved to a different tenant using PATCH endpoint.
-* PredictAge API endpoint calls external endpoint (`https://api.agify.io/?name=<anyname>`)
+* PredictAge API endpoint calls external public API `https://api.agify.io/?name=<anyname>`
 
 This project uses -
 
@@ -15,7 +15,7 @@ This project uses -
 * Entity Framework Core
 * Automapper
 * Swagger
-* IOptions (For Injecting configuration settings)
+* IOptions (For Injecting appsettings.json configuration settings)
 * Entity Framework InMemory (For tests)
 * FluentAssertions  (For tests)
 * xUnit  (For tests)
