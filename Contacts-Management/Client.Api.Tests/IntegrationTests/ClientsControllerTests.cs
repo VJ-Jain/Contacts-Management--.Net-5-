@@ -40,11 +40,64 @@ namespace Client.Api.Tests.IntegrationTests
         }
 
         [Fact]
+        public async Task Should_Not_CreateClient_For_Invalid_Tenant()
+        {
+            // Arrange
+            var customHttpClient = new CustomWebApplicationFactory<Startup>(Guid.NewGuid().ToString()).CreateClient();
+            var client = new ClientCreateDto
+            {
+                TenantId = Guid.NewGuid(),
+                FirstName = "any",
+                LastName = "any",
+                ContactNumber = "any",
+                EmailAddress = "any",
+                Country = "any",
+                ClientType = ClientType.Free.ToString()
+            };
+            var payload = JsonConvert.SerializeObject(client);
+
+            // Act
+            var createClientResponse = await customHttpClient.PostAsync("/api/clients", new StringContent(payload, Encoding.UTF8, "application/json"));
+
+            // Assert
+            createClientResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+            var createClientResponseBody = await createClientResponse.Content.ReadAsStringAsync();
+            createClientResponseBody.Should().Contain("Invalid Tenant Id");
+        }
+
+        [Fact]
+        public async Task Should_Not_CreateClient_When_Payload_Data_Is_Missing()
+        {
+            // Arrange
+            var customHttpClient = new CustomWebApplicationFactory<Startup>(Guid.NewGuid().ToString()).CreateClient();
+            var createdTenant = await TenantsControllerTests.CreateTenant(customHttpClient);
+
+            var client = new ClientCreateDto
+            {
+                TenantId = createdTenant.TenantId,
+                FirstName = "",
+                LastName = "any",
+                ContactNumber = "any",
+                EmailAddress = "any",
+                Country = "any",
+                ClientType = ClientType.Free.ToString()
+            };
+            var payload = JsonConvert.SerializeObject(client);
+
+            // Act
+            var createClientResponse = await customHttpClient.PostAsync("/api/clients", new StringContent(payload, Encoding.UTF8, "application/json"));
+
+            // Assert
+            createClientResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+            var createClientResponseBody = await createClientResponse.Content.ReadAsStringAsync();
+            createClientResponseBody.Should().Contain("The FirstName field is required");
+        }
+
+        [Fact]
         public async Task Should_CreateClient()
         {
             // Arrange
             var customHttpClient = new CustomWebApplicationFactory<Startup>(Guid.NewGuid().ToString()).CreateClient();
-
             var createdTenant = await TenantsControllerTests.CreateTenant(customHttpClient);
 
             // Act, Assert
@@ -56,9 +109,7 @@ namespace Client.Api.Tests.IntegrationTests
         {
             // Arrange
             var customHttpClient = new CustomWebApplicationFactory<Startup>(Guid.NewGuid().ToString()).CreateClient();
-
             var createdTenant = await TenantsControllerTests.CreateTenant(customHttpClient);
-
             var createdClient = await CreateClient(customHttpClient, createdTenant.TenantId);
 
             // Act
@@ -77,9 +128,28 @@ namespace Client.Api.Tests.IntegrationTests
         {
             // Arrange
             var customHttpClient = new CustomWebApplicationFactory<Startup>(Guid.NewGuid().ToString()).CreateClient();
-
             var createdTenant = await TenantsControllerTests.CreateTenant(customHttpClient);
+            var createdClient = await CreateClient(customHttpClient, createdTenant.TenantId);
 
+            // Act
+            var getResponseBeforeDeletion = await customHttpClient.GetAsync($"/api/clients/{createdClient.ClientId}");
+
+            //Assert
+            getResponseBeforeDeletion.StatusCode.Should().Be(HttpStatusCode.OK);
+
+            // Act
+            var deleteResponse = await customHttpClient.DeleteAsync($"/api/clients/{createdClient.ClientId}");
+
+            //Assert
+            deleteResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        }
+
+        [Fact]
+        public async Task Should_Not_Return_DeletedClient()
+        {
+            // Arrange
+            var customHttpClient = new CustomWebApplicationFactory<Startup>(Guid.NewGuid().ToString()).CreateClient();
+            var createdTenant = await TenantsControllerTests.CreateTenant(customHttpClient);
             var createdClient = await CreateClient(customHttpClient, createdTenant.TenantId);
 
             // Act
@@ -106,9 +176,7 @@ namespace Client.Api.Tests.IntegrationTests
         {
             // Arrange
             var customHttpClient = new CustomWebApplicationFactory<Startup>(Guid.NewGuid().ToString()).CreateClient();
-
             var createdTenant = await TenantsControllerTests.CreateTenant(customHttpClient);
-
             var createdClient = await CreateClient(customHttpClient, createdTenant.TenantId);
 
             var updatedClientDto = new ClientUpdateDto
@@ -135,15 +203,40 @@ namespace Client.Api.Tests.IntegrationTests
         }
 
         [Fact]
+        public async Task Should_Not_UpdateClient_When_Payload_Data_Is_Missing()
+        {
+            // Arrange
+            var customHttpClient = new CustomWebApplicationFactory<Startup>(Guid.NewGuid().ToString()).CreateClient();
+            var createdTenant = await TenantsControllerTests.CreateTenant(customHttpClient);
+            var createdClient = await CreateClient(customHttpClient, createdTenant.TenantId);
+
+            var updatedClientDto = new ClientUpdateDto
+            {
+                FirstName = "any",
+                LastName = "",
+                ContactNumber = "any",
+                EmailAddress = "any",
+                Country = "new Country",
+                ClientType = ClientType.Subscriber.ToString()
+            };
+            var updatePayload = JsonConvert.SerializeObject(updatedClientDto);
+
+            // Act
+            var updateResponse = await customHttpClient.PutAsync($"/api/clients/{createdClient.ClientId}", new StringContent(updatePayload, Encoding.UTF8, "application/json"));
+
+            // Assert
+            updateResponse.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+            var updateResponseBody = await updateResponse.Content.ReadAsStringAsync();
+            updateResponseBody.Should().Contain("The LastName field is required");
+        }
+
+        [Fact]
         public async Task Should_MoveClientToNewTenant()
         {
             // Arrange
             var customHttpClient = new CustomWebApplicationFactory<Startup>(Guid.NewGuid().ToString()).CreateClient();
-
             var createdTenant1 = await TenantsControllerTests.CreateTenant(customHttpClient);
-
             var createdClient = await CreateClient(customHttpClient, createdTenant1.TenantId);
-
             var createdTenant2 = await TenantsControllerTests.CreateTenant(customHttpClient);
 
             var clientTenantUpdateDto = new ClientTenantUpdateDto

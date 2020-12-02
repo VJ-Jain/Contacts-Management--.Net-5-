@@ -47,7 +47,6 @@ namespace Client.Api.Tests.IntegrationTests
         {
             // Arrange
             var customHttpClient = new CustomWebApplicationFactory<Startup>(Guid.NewGuid().ToString()).CreateClient();
-
             var createdTenant1 = await CreateTenant(customHttpClient);
             var createdTenant2 = await CreateTenant(customHttpClient);
 
@@ -69,8 +68,12 @@ namespace Client.Api.Tests.IntegrationTests
             // Arrange
             var customHttpClient = new CustomWebApplicationFactory<Startup>(Guid.NewGuid().ToString()).CreateClient();
 
-            // Act, Assert
-            await CreateTenant(customHttpClient);
+            // Act
+            var createdTenant = await CreateTenant(customHttpClient);
+
+            // Assert
+            createdTenant.TenantId.Should().NotBeEmpty();
+            createdTenant.DateCreated.Should().Be(DateTime.Now.ToShortDateString());
         }
 
         [Fact]
@@ -78,19 +81,17 @@ namespace Client.Api.Tests.IntegrationTests
         {
             // Arrange
             var customHttpClient = new CustomWebApplicationFactory<Startup>(Guid.NewGuid().ToString()).CreateClient();
-
-            var createdTenant1 = await CreateTenant(customHttpClient);
-            var createdTenant2 = await CreateTenant(customHttpClient);
+            var createdTenant = await CreateTenant(customHttpClient);
 
             // Act
-            var getResponse = await customHttpClient.GetAsync($"/api/tenants/{createdTenant1.TenantId}");
+            var getResponse = await customHttpClient.GetAsync($"/api/tenants/{createdTenant.TenantId}");
 
             //Assert
             getResponse.StatusCode.Should().Be(HttpStatusCode.OK);
             var responseBody = await getResponse.Content.ReadAsStringAsync();
             var retrievedTenant = JsonConvert.DeserializeObject<TenantReadDto>(responseBody);
             retrievedTenant.Should().NotBeNull();
-            retrievedTenant.TenantId.Should().Be(createdTenant1.TenantId);
+            retrievedTenant.TenantId.Should().Be(createdTenant.TenantId);
         }
 
         [Fact]
@@ -98,24 +99,42 @@ namespace Client.Api.Tests.IntegrationTests
         {
             // Arrange
             var customHttpClient = new CustomWebApplicationFactory<Startup>(Guid.NewGuid().ToString()).CreateClient();
-
-            var createdTenant1 = await CreateTenant(customHttpClient);
-            var createdTenant2 = await CreateTenant(customHttpClient);
+            var createdTenant = await CreateTenant(customHttpClient);
 
             // Act
-            var getResponseBeforeDeletion = await customHttpClient.GetAsync($"/api/tenants/{createdTenant1.TenantId}");
+            var getResponseBeforeDeletion = await customHttpClient.GetAsync($"/api/tenants/{createdTenant.TenantId}");
 
             //Assert
             getResponseBeforeDeletion.StatusCode.Should().Be(HttpStatusCode.OK);
 
             // Act
-            var deleteResponse = await customHttpClient.DeleteAsync($"/api/tenants/{createdTenant1.TenantId}");
+            var deleteResponse = await customHttpClient.DeleteAsync($"/api/tenants/{createdTenant.TenantId}");
+
+            //Assert
+            deleteResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        }
+
+        [Fact]
+        public async Task Should_Not_Return_DeletedTenant()
+        {
+            // Arrange
+            var customHttpClient = new CustomWebApplicationFactory<Startup>(Guid.NewGuid().ToString()).CreateClient();
+            var createdTenant = await CreateTenant(customHttpClient);
+
+            // Act
+            var getResponseBeforeDeletion = await customHttpClient.GetAsync($"/api/tenants/{createdTenant.TenantId}");
+
+            //Assert
+            getResponseBeforeDeletion.StatusCode.Should().Be(HttpStatusCode.OK);
+
+            // Act
+            var deleteResponse = await customHttpClient.DeleteAsync($"/api/tenants/{createdTenant.TenantId}");
 
             //Assert
             deleteResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
             // Act
-            var getResponseAfterDeletion = await customHttpClient.GetAsync($"/api/tenants/{createdTenant1.TenantId}");
+            var getResponseAfterDeletion = await customHttpClient.GetAsync($"/api/tenants/{createdTenant.TenantId}");
 
             //Assert
             getResponseAfterDeletion.StatusCode.Should().Be(HttpStatusCode.NotFound);
@@ -126,7 +145,6 @@ namespace Client.Api.Tests.IntegrationTests
         {
             // Arrange
             var customHttpClient = new CustomWebApplicationFactory<Startup>(Guid.NewGuid().ToString()).CreateClient();
-
             var createdTenant = await CreateTenant(customHttpClient);
             var createdClient = await ClientsControllerTests.CreateClient(customHttpClient, createdTenant.TenantId);
 
