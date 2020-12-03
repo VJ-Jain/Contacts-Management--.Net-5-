@@ -1,6 +1,5 @@
 using AutoMapper;
 using Clients.Api.Data;
-using Clients.Api.ExternalServices;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
@@ -38,10 +37,6 @@ namespace Clients.Api
 
             services.AddScoped<ITenantsRepository, SqlTenantsRepository>();
             services.AddScoped<IClientsRepository, SqlClientsRepository>();
-
-            services.AddOptions();
-            services.Configure<AgeApiConfiguration>(Configuration.GetSection("AgeApi"));
-            services.AddScoped<AgeApi>();
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
